@@ -1,11 +1,7 @@
 <resources>
     <string name="app_name">Komobo</string>
-    <string name="shortcut_dpad_up_short">Up</string>
-    <string name="shortcut_dpad_up_long">Send D-pad Up</string>
-    <string name="shortcut_dpad_down_short">Down</string>
-    <string name="shortcut_dpad_down_long">Send D-pad Down</string>
-    <string name="shortcut_channel_up_short">Channel +</string>
-    <string name="shortcut_channel_up_long">Send Channel Up</string>
-    <string name="shortcut_channel_down_short">Channel -</string>
-    <string name="shortcut_channel_down_long">Send Channel Down</string>
+    <string name="shortcut_previous_page_short">Previous</string>
+    <string name="shortcut_previous_page_long">Previous page</string>
+    <string name="shortcut_next_page_short">Next</string>
+    <string name="shortcut_next_page_long">Next page</string>
 </resources>
