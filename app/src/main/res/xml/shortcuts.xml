@@ -5,4 +5,7 @@
     <shortcut android:shortcutId="next_page" android:enabled="true" android:icon="@android:drawable/ic_media_ff" android:shortcutShortLabel="@string/shortcut_next_page_short" android:shortcutLongLabel="@string/shortcut_next_page_long">
         <intent android:action="com.kokseen1.komobo.SEND_DOWN" android:targetPackage="com.kokseen1.komobo" android:targetClass="com.kokseen1.komobo.ShortcutActivity" />
     </shortcut>
+    <shortcut android:shortcutId="lock_wake" android:enabled="true" android:icon="@android:drawable/ic_lock_lock" android:shortcutShortLabel="@string/shortcut_lock_wake_short" android:shortcutLongLabel="@string/shortcut_lock_wake_long">
+        <intent android:action="com.kokseen1.komobo.SEND_BACK" android:targetPackage="com.kokseen1.komobo" android:targetClass="com.kokseen1.komobo.ShortcutActivity" />
+    </shortcut>
 </shortcuts>
