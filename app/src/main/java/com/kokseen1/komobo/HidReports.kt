@@ -14,8 +14,6 @@ object HidReports {
     private const val CONSUMER_VOLUME_UP = 0x00E9
     private const val CONSUMER_VOLUME_DOWN = 0x00EA
     private const val CONSUMER_MUTE = 0x00E2
-    private const val CONSUMER_CHANNEL_UP = 0x009C
-    private const val CONSUMER_CHANNEL_DOWN = 0x009D
 
     data class Report(val reportId: Int, val press: ByteArray, val release: ByteArray)
 
@@ -26,8 +24,6 @@ object HidReports {
         RemoteCommand.DPAD_RIGHT -> keyboard(KEY_DPAD_RIGHT)
         RemoteCommand.ENTER -> keyboard(KEY_ENTER)
         RemoteCommand.BACK -> keyboard(KEY_ESC)
-        RemoteCommand.CHANNEL_UP -> consumer(CONSUMER_CHANNEL_UP)
-        RemoteCommand.CHANNEL_DOWN -> consumer(CONSUMER_CHANNEL_DOWN)
         RemoteCommand.VOLUME_UP -> consumer(CONSUMER_VOLUME_UP)
         RemoteCommand.VOLUME_DOWN -> consumer(CONSUMER_VOLUME_DOWN)
         RemoteCommand.MUTE -> consumer(CONSUMER_MUTE)

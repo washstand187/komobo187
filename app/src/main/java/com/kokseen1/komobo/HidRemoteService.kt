@@ -35,8 +35,6 @@ class HidRemoteService : Service() {
         const val ACTION_SEND_RIGHT = "com.kokseen1.komobo.SEND_RIGHT"
         const val ACTION_SEND_ENTER = "com.kokseen1.komobo.SEND_ENTER"
         const val ACTION_SEND_BACK = "com.kokseen1.komobo.SEND_BACK"
-        const val ACTION_SEND_CHANNEL_UP = "com.kokseen1.komobo.SEND_CHANNEL_UP"
-        const val ACTION_SEND_CHANNEL_DOWN = "com.kokseen1.komobo.SEND_CHANNEL_DOWN"
         const val ACTION_CONNECT_SELECTED = "com.kokseen1.komobo.CONNECT_SELECTED"
         const val ACTION_VOLUME_UP_MAPPING = "com.kokseen1.komobo.VOLUME_UP_MAPPING"
         const val ACTION_VOLUME_DOWN_MAPPING = "com.kokseen1.komobo.VOLUME_DOWN_MAPPING"
@@ -141,8 +139,6 @@ class HidRemoteService : Service() {
             ACTION_SEND_RIGHT -> sendCommand(RemoteCommand.DPAD_RIGHT)
             ACTION_SEND_ENTER -> sendCommand(RemoteCommand.ENTER)
             ACTION_SEND_BACK -> sendCommand(RemoteCommand.BACK)
-            ACTION_SEND_CHANNEL_UP -> sendCommand(RemoteCommand.CHANNEL_UP)
-            ACTION_SEND_CHANNEL_DOWN -> sendCommand(RemoteCommand.CHANNEL_DOWN)
             ACTION_VOLUME_UP_MAPPING -> sendCommand(Prefs.volumeUpCommand(this))
             ACTION_VOLUME_DOWN_MAPPING -> sendCommand(Prefs.volumeDownCommand(this))
             ACTION_STOP -> stopSelf()
@@ -294,11 +290,10 @@ class HidRemoteService : Service() {
             .setContentText(status)
             .setContentIntent(openIntent)
             .setOngoing(true)
-            .addAction(0, "Up", serviceIntent(ACTION_SEND_UP, 1))
-            .addAction(0, "Down", serviceIntent(ACTION_SEND_DOWN, 2))
-            .addAction(0, "CH+", serviceIntent(ACTION_SEND_CHANNEL_UP, 3))
-            .addAction(0, "CH-", serviceIntent(ACTION_SEND_CHANNEL_DOWN, 4))
-            .addAction(0, "Stop", serviceIntent(ACTION_STOP, 5))
+            .addAction(0, "Previous", serviceIntent(ACTION_SEND_UP, 1))
+            .addAction(0, "Next", serviceIntent(ACTION_SEND_DOWN, 2))
+            .addAction(0, "Lock / wake", serviceIntent(ACTION_SEND_BACK, 3))
+            .addAction(0, "Stop", serviceIntent(ACTION_STOP, 4))
             .build()
     }
 
@@ -307,7 +302,7 @@ class HidRemoteService : Service() {
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= 26) {
-            val channel = NotificationChannel(CHANNEL_ID, "BT HID Remote", NotificationManager.IMPORTANCE_LOW)
+            val channel = NotificationChannel(CHANNEL_ID, "Komobo remote", NotificationManager.IMPORTANCE_LOW)
             getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
         }
     }

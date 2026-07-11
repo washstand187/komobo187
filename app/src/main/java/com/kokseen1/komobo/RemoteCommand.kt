@@ -7,8 +7,6 @@ enum class RemoteCommand(val label: String) {
     DPAD_RIGHT("D-pad Right"),
     ENTER("Enter"),
     BACK("Back/Esc"),
-    CHANNEL_UP("Channel Up"),
-    CHANNEL_DOWN("Channel Down"),
     VOLUME_UP("Remote Volume Up"),
     VOLUME_DOWN("Remote Volume Down"),
     MUTE("Mute");
