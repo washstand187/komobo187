@@ -116,7 +116,7 @@ class MainActivity : AppCompatActivity() {
             setTextColor(Color.BLACK)
             setPadding(0, dp(24), 0, 0)
         })
-        page.addView(label("KOBO CLARA BW  ·  BLUETOOTH REMOTE", 11f, bold = true).apply {
+        page.addView(label("BLUETOOTH PAGE REMOTE", 11f, bold = true).apply {
             letterSpacing = .08f
             setTextColor(color("#555555"))
             setPadding(0, dp(4), 0, dp(16))
