@@ -1,0 +1,16 @@
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut android:shortcutId="dpad_up" android:enabled="true" android:icon="@android:drawable/arrow_up_float" android:shortcutShortLabel="@string/shortcut_dpad_up_short" android:shortcutLongLabel="@string/shortcut_dpad_up_long">
+        <intent android:action="com.kokseen1.komobo.SEND_UP" android:targetPackage="com.kokseen1.komobo" android:targetClass="com.kokseen1.komobo.ShortcutActivity" />
+        <categories android:name="android.shortcut.conversation" />
+    </shortcut>
+    <shortcut android:shortcutId="dpad_down" android:enabled="true" android:icon="@android:drawable/arrow_down_float" android:shortcutShortLabel="@string/shortcut_dpad_down_short" android:shortcutLongLabel="@string/shortcut_dpad_down_long">
+        <intent android:action="com.kokseen1.komobo.SEND_DOWN" android:targetPackage="com.kokseen1.komobo" android:targetClass="com.kokseen1.komobo.ShortcutActivity" />
+        <categories android:name="android.shortcut.conversation" />
+    </shortcut>
+    <shortcut android:shortcutId="channel_up" android:enabled="true" android:icon="@android:drawable/ic_media_ff" android:shortcutShortLabel="@string/shortcut_channel_up_short" android:shortcutLongLabel="@string/shortcut_channel_up_long">
+        <intent android:action="com.kokseen1.komobo.SEND_CHANNEL_UP" android:targetPackage="com.kokseen1.komobo" android:targetClass="com.kokseen1.komobo.ShortcutActivity" />
+    </shortcut>
+    <shortcut android:shortcutId="channel_down" android:enabled="true" android:icon="@android:drawable/ic_media_rew" android:shortcutShortLabel="@string/shortcut_channel_down_short" android:shortcutLongLabel="@string/shortcut_channel_down_long">
+        <intent android:action="com.kokseen1.komobo.SEND_CHANNEL_DOWN" android:targetPackage="com.kokseen1.komobo" android:targetClass="com.kokseen1.komobo.ShortcutActivity" />
+    </shortcut>
+</shortcuts>
