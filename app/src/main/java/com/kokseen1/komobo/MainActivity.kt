@@ -355,10 +355,17 @@ class MainActivity : AppCompatActivity() {
         background = rounded("#F4F1E8", 2)
         addView(horizontal().apply {
             gravity = Gravity.CENTER_VERTICAL
-            addView(label(title, 26f, bold = true).apply {
+            addView(label(title, 21f, bold = true).apply {
                 typeface = Typeface.create("serif", Typeface.BOLD)
-            }, LinearLayout.LayoutParams(0, dp(48), 1f))
-            addView(actionButton("Close", secondary = true) { dialog.dismiss() }, LinearLayout.LayoutParams(dp(86), dp(40)))
+                maxLines = 2
+                setPadding(0, dp(6), dp(10), dp(6))
+                minimumHeight = dp(48)
+                gravity = Gravity.CENTER_VERTICAL
+            }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+            addView(
+                actionButton("Close", secondary = true) { dialog.dismiss() },
+                LinearLayout.LayoutParams(dp(78), dp(40))
+            )
         })
         addView(divider().apply {
             layoutParams = matchHeight(dp(1)).apply { bottomMargin = dp(4) }
