@@ -313,7 +313,14 @@ class HidRemoteService : Service() {
         fun serviceIntent(action: String, requestCode: Int) = PendingIntent.getService(
             this, requestCode, Intent(this, HidRemoteService::class.java).setAction(action), pendingFlags()
         )
-        val openIntent = PendingIntent.getActivity(this, 99, Intent(this, MainActivity::class.java), pendingFlags())
+        val openIntent = PendingIntent.getActivity(
+            this,
+            99,
+            Intent(this, MainActivity::class.java).addFlags(
+                Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            ),
+            pendingFlags()
+        )
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.stat_sys_data_bluetooth)
             .setContentTitle("Komobo")
@@ -322,7 +329,7 @@ class HidRemoteService : Service() {
             .setOngoing(true)
             .addAction(0, "Previous", serviceIntent(ACTION_SEND_UP, 1))
             .addAction(0, "Next", serviceIntent(ACTION_SEND_DOWN, 2))
-            .addAction(0, "Disconnect & quit", serviceIntent(ACTION_STOP, 3))
+            .addAction(0, "Disconnect", serviceIntent(ACTION_STOP, 3))
             .addAction(0, "Lock / wake", serviceIntent(ACTION_SEND_BACK, 4))
             .build()
     }

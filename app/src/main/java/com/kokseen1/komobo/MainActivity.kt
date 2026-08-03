@@ -1,7 +1,6 @@
 package com.kokseen1.komobo
 
 import android.Manifest
-import android.app.AlertDialog
 import android.app.Dialog
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
@@ -21,12 +20,10 @@ import android.view.Gravity
 import android.view.HapticFeedbackConstants
 import android.view.View
 import android.view.Window
-import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.LinearLayout
 import android.widget.ScrollView
-import android.widget.Spinner
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -242,32 +239,35 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun confirmStopRemote() {
-        AlertDialog.Builder(this)
-            .setTitle("Disconnect remote?")
-            .setMessage("Page controls and physical volume-button actions will stop until you reconnect.")
-            .setNegativeButton("Cancel", null)
-            .setPositiveButton("Disconnect and stop") { _, _ -> send(HidRemoteService.ACTION_STOP) }
-            .show()
+        showConfirmationDialog(
+            title = "Disconnect remote?",
+            message = "Page controls and physical volume-button actions will stop until you reconnect.",
+            confirmLabel = "Disconnect"
+        ) {
+            send(HidRemoteService.ACTION_STOP)
+        }
     }
 
     private fun mappingSpinner(label: String, isUp: Boolean): View = vertical().apply {
         addView(label(label, 13f, bold = true).apply { setPadding(dp(2), dp(7), 0, dp(2)) })
         val commands = listOf(RemoteCommand.DPAD_UP, RemoteCommand.DPAD_DOWN, RemoteCommand.ENTER, RemoteCommand.BACK)
-        val spinner = Spinner(this@MainActivity).apply {
-            background = outlined("#F4F1E8", "#111111", 1, 2)
-            setPadding(dp(12), 0, dp(8), 0)
-            adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item, commands.map { friendlyCommand(it) })
-            val selected = if (isUp) Prefs.volumeUpCommand(this@MainActivity) else Prefs.volumeDownCommand(this@MainActivity)
-            setSelection(commands.indexOf(selected).coerceAtLeast(0))
-            onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
-                override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: View?, position: Int, id: Long) {
-                    if (isUp) Prefs.setVolumeUpCommand(this@MainActivity, commands[position])
-                    else Prefs.setVolumeDownCommand(this@MainActivity, commands[position])
-                }
-                override fun onNothingSelected(parent: android.widget.AdapterView<*>?) = Unit
+        val selected = if (isUp) Prefs.volumeUpCommand(this@MainActivity) else Prefs.volumeDownCommand(this@MainActivity)
+        lateinit var pickerButton: Button
+        pickerButton = actionButton("${friendlyCommand(selected)}  ▾", secondary = true) {
+            val selectedCommand = if (isUp) Prefs.volumeUpCommand(this@MainActivity)
+            else Prefs.volumeDownCommand(this@MainActivity)
+            showChoiceDialog(
+                title = "$label action",
+                choices = commands.map(::friendlyCommand),
+                selectedIndex = commands.indexOf(selectedCommand)
+            ) { index ->
+                val command = commands[index]
+                if (isUp) Prefs.setVolumeUpCommand(this@MainActivity, command)
+                else Prefs.setVolumeDownCommand(this@MainActivity, command)
+                pickerButton.text = "${friendlyCommand(command)}  ▾"
             }
         }
-        addView(spinner, matchHeight(dp(48)))
+        addView(pickerButton, matchHeight(dp(48)))
     }
 
     private fun showDevicePicker() {
@@ -279,20 +279,104 @@ class MainActivity : AppCompatActivity() {
         val devices = (getSystemService(BLUETOOTH_SERVICE) as BluetoothManager).adapter?.bondedDevices
             ?.sortedBy { safeName(it) }.orEmpty()
         if (devices.isEmpty()) {
-            AlertDialog.Builder(this).setMessage("No paired Bluetooth devices found.")
-                .setPositiveButton("Bluetooth settings") { _, _ -> startActivity(Intent(Settings.ACTION_BLUETOOTH_SETTINGS)) }
-                .setNegativeButton("Cancel", null).show()
+            showConfirmationDialog(
+                title = "No paired devices",
+                message = "Pair your eReader in Android Bluetooth settings, then return to Komobo.",
+                confirmLabel = "Bluetooth settings"
+            ) {
+                startActivity(Intent(Settings.ACTION_BLUETOOTH_SETTINGS))
+            }
             return
         }
-        AlertDialog.Builder(this)
-            .setTitle("Select device")
-            .setItems(devices.map(::safeName).toTypedArray()) { _, index ->
-                Prefs.setHostAddress(this, devices[index].address)
-                updateConnectionCard()
-                send(HidRemoteService.ACTION_START)
-                send(HidRemoteService.ACTION_CONNECT_SELECTED)
-            }
-            .show()
+        val selectedAddress = Prefs.hostAddress(this)
+        showChoiceDialog(
+            title = "Change device",
+            choices = devices.map(::safeName),
+            selectedIndex = devices.indexOfFirst { it.address == selectedAddress }
+        ) { index ->
+            Prefs.setHostAddress(this, devices[index].address)
+            updateConnectionCard()
+            send(HidRemoteService.ACTION_START)
+            send(HidRemoteService.ACTION_CONNECT_SELECTED)
+        }
+    }
+
+    private fun showChoiceDialog(
+        title: String,
+        choices: List<String>,
+        selectedIndex: Int,
+        onSelected: (Int) -> Unit
+    ) {
+        val dialog = Dialog(this)
+        val content = dialogContent(dialog, title)
+        choices.forEachIndexed { index, choice ->
+            val selected = index == selectedIndex
+            content.addView(actionButton(if (selected) "✓  $choice" else choice, secondary = !selected) {
+                dialog.dismiss()
+                onSelected(index)
+            }.apply {
+                gravity = Gravity.START or Gravity.CENTER_VERTICAL
+                setPadding(dp(18), 0, dp(14), 0)
+                layoutParams = matchHeight(dp(52)).apply { topMargin = dp(8) }
+            })
+        }
+        showKomoboDialog(dialog, content)
+    }
+
+    private fun showConfirmationDialog(
+        title: String,
+        message: String,
+        confirmLabel: String,
+        onConfirm: () -> Unit
+    ) {
+        val dialog = Dialog(this)
+        val content = dialogContent(dialog, title).apply {
+            addView(label(message, 15f).apply {
+                setTextColor(color("#333333"))
+                setPadding(dp(2), dp(16), dp(2), dp(20))
+            })
+            addView(horizontal().apply {
+                addView(actionButton("Cancel", secondary = true) { dialog.dismiss() }, weighted(1f, dp(50)).apply {
+                    rightMargin = dp(5)
+                })
+                addView(actionButton(confirmLabel) {
+                    dialog.dismiss()
+                    onConfirm()
+                }, weighted(1f, dp(50)).apply {
+                    leftMargin = dp(5)
+                })
+            })
+        }
+        showKomoboDialog(dialog, content)
+    }
+
+    private fun dialogContent(dialog: Dialog, title: String): LinearLayout = vertical().apply {
+        setPadding(dp(22), dp(20), dp(22), dp(22))
+        background = rounded("#F4F1E8", 2)
+        addView(horizontal().apply {
+            gravity = Gravity.CENTER_VERTICAL
+            addView(label(title, 26f, bold = true).apply {
+                typeface = Typeface.create("serif", Typeface.BOLD)
+            }, LinearLayout.LayoutParams(0, dp(48), 1f))
+            addView(actionButton("Close", secondary = true) { dialog.dismiss() }, LinearLayout.LayoutParams(dp(86), dp(40)))
+        })
+        addView(divider().apply {
+            layoutParams = matchHeight(dp(1)).apply { bottomMargin = dp(4) }
+        })
+    }
+
+    private fun showKomoboDialog(dialog: Dialog, content: View) {
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+        dialog.setContentView(ScrollView(this).apply {
+            setBackgroundColor(color("#F4F1E8"))
+            addView(content)
+        })
+        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        dialog.show()
+        dialog.window?.setLayout(
+            (resources.displayMetrics.widthPixels * .92f).toInt(),
+            LinearLayout.LayoutParams.WRAP_CONTENT
+        )
     }
 
     private fun updateConnectionCard() {
