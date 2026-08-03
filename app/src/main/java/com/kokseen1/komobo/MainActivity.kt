@@ -3,6 +3,7 @@ package com.kokseen1.komobo
 import android.Manifest
 import android.app.AlertDialog
 import android.app.Dialog
+import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothManager
 import android.content.Intent
@@ -27,6 +28,7 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.Spinner
 import android.widget.TextView
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -36,6 +38,21 @@ class MainActivity : AppCompatActivity() {
     private lateinit var statusDot: TextView
     private lateinit var statusText: TextView
     private lateinit var deviceText: TextView
+    private var bluetoothEnableRequestInFlight = false
+    private var bluetoothEnablePromptAttempted = false
+    private var connectAfterBluetoothEnabled = false
+
+    private val enableBluetoothLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) {
+        bluetoothEnableRequestInFlight = false
+        if (isBluetoothEnabled()) {
+            send(HidRemoteService.ACTION_START)
+            if (connectAfterBluetoothEnabled) send(HidRemoteService.ACTION_CONNECT_SELECTED)
+        }
+        connectAfterBluetoothEnabled = false
+        updateConnectionCard()
+    }
 
     private val statusUpdater = object : Runnable {
         override fun run() {
@@ -52,6 +69,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        requestBluetoothEnableIfNeeded()
         updateConnectionCard()
         handler.post(statusUpdater)
     }
@@ -102,8 +120,10 @@ class MainActivity : AppCompatActivity() {
                     addView(deviceText)
                 }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
                 addView(actionButton("Reconnect", secondary = true) {
-                    send(HidRemoteService.ACTION_START)
-                    send(HidRemoteService.ACTION_CONNECT_SELECTED)
+                    if (requestBluetoothEnableIfNeeded(connectAfterEnable = true, allowRepeat = true)) {
+                        send(HidRemoteService.ACTION_START)
+                        send(HidRemoteService.ACTION_CONNECT_SELECTED)
+                    }
                 }.apply {
                     layoutParams = LinearLayout.LayoutParams(dp(122), dp(42))
                 })
@@ -255,6 +275,7 @@ class MainActivity : AppCompatActivity() {
             requestRuntimePermissions()
             return
         }
+        if (!requestBluetoothEnableIfNeeded(allowRepeat = true)) return
         val devices = (getSystemService(BLUETOOTH_SERVICE) as BluetoothManager).adapter?.bondedDevices
             ?.sortedBy { safeName(it) }.orEmpty()
         if (devices.isEmpty()) {
@@ -302,6 +323,33 @@ class MainActivity : AppCompatActivity() {
             permissions += Manifest.permission.POST_NOTIFICATIONS
         }
         if (permissions.isNotEmpty()) ActivityCompat.requestPermissions(this, permissions.toTypedArray(), 100)
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == 100 && hasBtConnectPermission()) requestBluetoothEnableIfNeeded()
+    }
+
+    private fun requestBluetoothEnableIfNeeded(
+        connectAfterEnable: Boolean = false,
+        allowRepeat: Boolean = false
+    ): Boolean {
+        if (!hasBtConnectPermission()) return false
+        val adapter = (getSystemService(BLUETOOTH_SERVICE) as BluetoothManager).adapter ?: return false
+        if (adapter.isEnabled) return true
+
+        connectAfterBluetoothEnabled = connectAfterBluetoothEnabled || connectAfterEnable
+        if (!bluetoothEnableRequestInFlight && (allowRepeat || !bluetoothEnablePromptAttempted)) {
+            bluetoothEnableRequestInFlight = true
+            bluetoothEnablePromptAttempted = true
+            enableBluetoothLauncher.launch(Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE))
+        }
+        return false
+    }
+
+    private fun isBluetoothEnabled(): Boolean {
+        if (!hasBtConnectPermission()) return false
+        return (getSystemService(BLUETOOTH_SERVICE) as BluetoothManager).adapter?.isEnabled == true
     }
 
     private fun hasBtConnectPermission() = Build.VERSION.SDK_INT < 31 ||

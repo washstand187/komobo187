@@ -29,6 +29,7 @@ class HidRemoteService : Service() {
     companion object {
         const val ACTION_START = "com.kokseen1.komobo.START"
         const val ACTION_STOP = "com.kokseen1.komobo.STOP"
+        const val ACTION_DISCONNECT = "com.kokseen1.komobo.DISCONNECT"
         const val ACTION_SEND_UP = "com.kokseen1.komobo.SEND_UP"
         const val ACTION_SEND_DOWN = "com.kokseen1.komobo.SEND_DOWN"
         const val ACTION_SEND_LEFT = "com.kokseen1.komobo.SEND_LEFT"
@@ -51,6 +52,7 @@ class HidRemoteService : Service() {
     private val executor = Executors.newSingleThreadExecutor()
     private var hidDevice: BluetoothHidDevice? = null
     private var hostDevice: BluetoothDevice? = null
+    private var profileProxyRequested = false
     private var mediaSession: MediaSessionCompat? = null
     private var wakeLock: PowerManager.WakeLock? = null
     @Volatile private var lastKeyboardReport = ByteArray(8)
@@ -66,8 +68,10 @@ class HidRemoteService : Service() {
 
         override fun onServiceDisconnected(profile: Int) {
             if (profile == BluetoothProfile.HID_DEVICE) {
+                profileProxyRequested = false
                 hidDevice = null
                 connectionStatus = "Bluetooth service unavailable"
+                startForeground(NOTIF_ID, buildNotification(connectionStatus))
             }
         }
     }
@@ -91,8 +95,13 @@ class HidRemoteService : Service() {
             } else if (state == BluetoothProfile.STATE_DISCONNECTED && device == hostDevice) {
                 hostDevice = null
                 connectionStatus = "Not connected"
+                startForeground(NOTIF_ID, buildNotification(connectionStatus))
             } else if (state == BluetoothProfile.STATE_CONNECTING) {
                 connectionStatus = "Connecting…"
+                startForeground(NOTIF_ID, buildNotification(connectionStatus))
+            } else if (state == BluetoothProfile.STATE_DISCONNECTING) {
+                connectionStatus = "Disconnecting…"
+                startForeground(NOTIF_ID, buildNotification(connectionStatus))
             }
         }
 
@@ -131,8 +140,9 @@ class HidRemoteService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
-            ACTION_START -> Unit
+            ACTION_START -> initBluetoothHid()
             ACTION_CONNECT_SELECTED -> connectSelectedHost()
+            ACTION_DISCONNECT -> disconnectHost()
             ACTION_SEND_UP -> sendCommand(RemoteCommand.DPAD_UP)
             ACTION_SEND_DOWN -> sendCommand(RemoteCommand.DPAD_DOWN)
             ACTION_SEND_LEFT -> sendCommand(RemoteCommand.DPAD_LEFT)
@@ -161,13 +171,20 @@ class HidRemoteService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     private fun initBluetoothHid() {
+        if (hidDevice != null || profileProxyRequested) return
         if (!hasBtConnectPermission()) {
             Log.w(TAG, "Missing BLUETOOTH_CONNECT")
             connectionStatus = "Bluetooth permission needed"
+            startForeground(NOTIF_ID, buildNotification(connectionStatus))
             return
         }
         val adapter = (getSystemService(BLUETOOTH_SERVICE) as BluetoothManager).adapter ?: return
-        adapter.getProfileProxy(this, profileListener, BluetoothProfile.HID_DEVICE)
+        if (!adapter.isEnabled) {
+            connectionStatus = "Bluetooth is off"
+            startForeground(NOTIF_ID, buildNotification(connectionStatus))
+            return
+        }
+        profileProxyRequested = adapter.getProfileProxy(this, profileListener, BluetoothProfile.HID_DEVICE)
     }
 
     private fun registerHidApp() {
@@ -192,6 +209,18 @@ class HidRemoteService : Service() {
 
     private fun connectSelectedHost() {
         if (!hasBtConnectPermission()) return
+        val adapter = (getSystemService(BLUETOOTH_SERVICE) as BluetoothManager).adapter
+        if (adapter?.isEnabled != true) {
+            connectionStatus = "Bluetooth is off"
+            startForeground(NOTIF_ID, buildNotification(connectionStatus))
+            return
+        }
+        if (hidDevice == null) {
+            initBluetoothHid()
+            connectionStatus = "Starting…"
+            startForeground(NOTIF_ID, buildNotification(connectionStatus))
+            return
+        }
         val host = selectedHost() ?: findFirstBondedDevice()
         if (host != null) {
             hostDevice = host
@@ -208,6 +237,33 @@ class HidRemoteService : Service() {
         } else {
             connectionStatus = "Choose a target"
             startForeground(NOTIF_ID, buildNotification("No paired target selected"))
+        }
+    }
+
+    private fun disconnectHost() {
+        if (!hasBtConnectPermission()) return
+        val host = hostDevice ?: selectedHost()
+        val hid = hidDevice
+        if (host == null || hid == null) {
+            hostDevice = null
+            connectionStatus = "Not connected"
+            startForeground(NOTIF_ID, buildNotification(connectionStatus))
+            return
+        }
+
+        val state = runCatching { hid.getConnectionState(host) }.getOrNull()
+        if (state == BluetoothProfile.STATE_CONNECTED || state == BluetoothProfile.STATE_CONNECTING) {
+            connectionStatus = "Disconnecting…"
+            startForeground(NOTIF_ID, buildNotification(connectionStatus))
+            val disconnectStarted = runCatching { hid.disconnect(host) }.getOrDefault(false)
+            if (!disconnectStarted) {
+                connectionStatus = "Disconnect failed"
+                startForeground(NOTIF_ID, buildNotification(connectionStatus))
+            }
+        } else {
+            hostDevice = null
+            connectionStatus = "Not connected"
+            startForeground(NOTIF_ID, buildNotification(connectionStatus))
         }
     }
 
@@ -292,8 +348,9 @@ class HidRemoteService : Service() {
             .setOngoing(true)
             .addAction(0, "Previous", serviceIntent(ACTION_SEND_UP, 1))
             .addAction(0, "Next", serviceIntent(ACTION_SEND_DOWN, 2))
-            .addAction(0, "Lock / wake", serviceIntent(ACTION_SEND_BACK, 3))
-            .addAction(0, "Stop", serviceIntent(ACTION_STOP, 4))
+            .addAction(0, "Disconnect", serviceIntent(ACTION_DISCONNECT, 3))
+            .addAction(0, "Lock / wake", serviceIntent(ACTION_SEND_BACK, 4))
+            .addAction(0, "Stop", serviceIntent(ACTION_STOP, 5))
             .build()
     }
 
