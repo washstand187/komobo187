@@ -4,6 +4,6 @@
     <string name="shortcut_previous_page_long">Página anterior</string>
     <string name="shortcut_next_page_short">Siguiente</string>
     <string name="shortcut_next_page_long">Página siguiente</string>
-    <string name="shortcut_lock_wake_short">Esc</string>
-    <string name="shortcut_lock_wake_long">Enviar Esc al Kobo</string>
+    <string name="shortcut_lock_wake_short">Bloqueo</string>
+    <string name="shortcut_lock_wake_long">Bloquear / desbloquear Kobo</string>
 </resources>
