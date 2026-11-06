@@ -11,14 +11,14 @@ Mi versión se ha hecho utilizando el kobo clara bw y el Samsung s25 ultra.
 
 Komobo te permite usar los botones físicos de volumen de tu teléfono Android (o su pantalla) para pasar las páginas de tu eReader Kobo por Bluetooth.
 
-## Paso 1: Instalación y Permisos Iniciales
+### Paso 1: Instalación y Permisos Iniciales
 
 1. Instala el archivo APK en tu teléfono Android (asegúrate de otorgar los permisos necesarios en tu navegador o gestor de archivos para instalar aplicaciones de fuentes desconocidas).
 2. Abre la aplicación por primera vez.
 3. Concede todos los accesos solicitados, especialmente los permisos de Bluetooth, dispositivos cercanos y notificaciones.
 
 
-## Paso 2: Vinculación y Configuración del Kobo
+### Paso 2: Vinculación y Configuración del Kobo
 
 1. Ve a los Ajustes de tu teléfono y entra a la sección de Bluetooth.
 2. Busca tu eReader Kobo entre los dispositivos disponibles y vinclúnalo (emparéjalo).
@@ -28,7 +28,7 @@ Komobo te permite usar los botones físicos de volumen de tu teléfono Android (
 5. Revisa en la configuración que las acciones asignadas a los botones de subir y bajar volumen estén bien asignadas (ya que esto puede dar un error al principio si no se verifica).
 6. Una vez configurado esto, toca el botón de Listo.
 
-## Paso 3: Conexión y Uso
+### Paso 3: Conexión y Uso
 
 1. En la pantalla principal de la app, donde dice "Elije tu Kobo", asegúrate de verificar que aparezca el estado como Conectado a tu Kobo.
 2. Si no se conecta automáticamente, usa el botón Reconectar (Reconnect).
