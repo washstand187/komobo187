@@ -1,97 +1,37 @@
-# Komobo
+# Sobre este proyecto
+Esta aplicación es una reconstrucción del prototipo inicial de **kokseen1**. Y me ayudó mucho, porque no tengo la facilidad de comprar un control remoto de forma oficial, ni de terceros.
 
-Komobo turns an Android phone into a Bluetooth page-turn remote for Kobo eReaders. It uses Android's Bluetooth HID Device API, so the Kobo receives standard keyboard reports without an app installed on the reader.
+## Nuevas características añadidas:
+• Soporte bilingüe: Disponible completamente en inglés y español. (Actualmente buscando un mejor nombre que Pasapáginas)
+• Modo Día y Noche: Interfaz adaptable con tema claro y oscuro para una lectura cómoda a cualquier hora.
 
-## Features
+Mi versión se ha hecho utilizando el kobo clara bw y el Samsung s25 ultra.
 
-- Previous and next page controls
-- Configurable physical volume-button actions
-- Lock-screen and screen-off operation through a foreground service
-- Lock/wake Kobo control
-- Paired-device selection and reconnection
-- Optional restart after the phone reboots
-- Portrait-only, Kobo e-ink-inspired interface
-- No internet permission, ads, analytics, or root access
+## Guía de Instalación y Uso de Komobo
 
-## Requirements
+Komobo te permite usar los botones físicos de volumen de tu teléfono Android (o su pantalla) para pasar las páginas de tu eReader Kobo por Bluetooth.
 
-- Android 9 or newer
-- A phone that supports Bluetooth HID Device mode
-- A paired Kobo eReader with Bluetooth remote support
+## Paso 1: Instalación y Permisos Iniciales
 
-Komobo has been developed and tested with a Samsung Galaxy S23 and Kobo Clara BW.
+1. Instala el archivo APK en tu teléfono Android (asegúrate de otorgar los permisos necesarios en tu navegador o gestor de archivos para instalar aplicaciones de fuentes desconocidas).
+2. Abre la aplicación por primera vez.
+3. Concede todos los accesos solicitados, especialmente los permisos de Bluetooth, dispositivos cercanos y notificaciones.
 
-## Build
 
-```bash
-./gradlew assembleDebug
-```
+## Paso 2: Vinculación y Configuración del Kobo
 
-The APK is written to:
+1. Ve a los Ajustes de tu teléfono y entra a la sección de Bluetooth.
+2. Busca tu eReader Kobo entre los dispositivos disponibles y vinclúnalo (emparéjalo).
+3. Regresa a la app Komobo y entra a sus ajustes.
+4. Toca en la opción Cambiar dispositivo (Change device) y selecciona tu Kobo.
+	• Nota importante: Debes dejarlo seleccionado, ya que si no realizas este paso, la aplicación no funcionará.
+5. Revisa en la configuración que las acciones asignadas a los botones de subir y bajar volumen estén bien asignadas (ya que esto puede dar un error al principio si no se verifica).
+6. Una vez configurado esto, toca el botón de Listo.
 
-```text
-app/build/outputs/apk/debug/app-debug.apk
-```
+## Paso 3: Conexión y Uso
 
-GitHub Actions also builds the debug APK for every push and pull request. Download it from the workflow run's `komobo-debug-apk` artifact.
-
-## Setup
-
-1. Install and open Komobo on the Android phone.
-2. Grant the requested Bluetooth and notification permissions.
-3. Pair the phone from the Kobo's Bluetooth settings.
-4. Open Komobo settings and select the Kobo under **Change device**.
-5. Tap **Reconnect** if the connection is not established automatically.
-6. Configure the phone's physical volume-button actions if desired.
-
-## How it works
-
-Komobo makes the Android phone behave like a Bluetooth keyboard. It does not install anything on the eReader and does not send commands over Wi-Fi or the internet.
-
-When the background service starts, it:
-
-1. Registers the app with Android's `BluetoothHidDevice` profile as a keyboard-class HID device.
-2. Advertises a HID report descriptor containing standard keyboard and consumer-control reports.
-3. Connects the HID profile to the selected bonded eReader.
-4. Sends a short key-press report followed by an empty key-release report for each action.
-
-The default page actions use standard keyboard usages that Kobo understands:
-
-| Komobo action | HID key sent | Observed Kobo behavior |
-| --- | --- | --- |
-| Previous page | D-pad Up | Previous page |
-| Next page | D-pad Down | Next page |
-| Lock / wake | Escape / Back | Toggle sleep and wake |
-
-The exact behavior is determined by the receiving eReader firmware.
-
-### Physical volume buttons
-
-Android normally sends the phone's volume keys to the active audio route. Komobo creates an active `MediaSessionCompat`, marks it as playing, and assigns it a remote relative-volume `VolumeProviderCompat`. This asks Android to route volume adjustments to Komobo's `onAdjustVolume()` callback.
-
-The complete path is:
-
-```text
-Phone volume key
-    → Android media session
-    → Komobo VolumeProvider
-    → configured Previous/Next/Lock action
-    → Bluetooth HID press + release reports
-    → eReader
-```
-
-The two physical keys are independently configurable in **Settings → Volume button actions**. Komobo resets its virtual volume to the midpoint after every adjustment, so repeated presses continue producing relative up/down callbacks instead of reaching a minimum or maximum.
-
-### Why it works on the lock screen
-
-The volume-key handling lives in `HidRemoteService`, not in the visible activity. Komobo runs that service in the foreground with an ongoing notification and keeps the media session active. Android can therefore deliver hardware volume adjustments while the app is hidden, the screen is off, or the phone is locked.
-
-Komobo also takes a partial CPU wake lock for up to ten minutes when the service starts. This helps short-term continuity but is not the mechanism that captures the buttons, and it is not a guarantee that Android will keep the process forever. The foreground service and active media session are the essential pieces.
-
-Behavior can still vary by phone manufacturer, Android version, current media playback, and audio-routing state. If another media app takes control of the volume route, reopen Komobo or tap **Reconnect**.
-
-## Notes
-
-- The foreground service must remain active for volume controls to work while the phone is locked.
-- Installing an updated APK restarts the HID service; tap **Reconnect** afterward if necessary.
-- Bluetooth HID behavior depends on the Android device and receiving reader firmware.
+1. En la pantalla principal de la app, donde dice "Elije tu Kobo", asegúrate de verificar que aparezca el estado como Conectado a tu Kobo.
+2. Si no se conecta automáticamente, usa el botón Reconectar (Reconnect).
+3. Una vez confirmada la conexión, ya puedes pasar páginas:
+	• Usando los botones táctiles en la pantalla del teléfono.
+	• Apagando la pantalla del celular (o bloqueándolo) y presionando los botones físicos de volumen laterales.
