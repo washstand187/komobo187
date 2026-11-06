@@ -66,7 +66,8 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        requestBluetoothEnableIfNeeded()
+        // Si ya hay permiso y Bluetooth está encendido, el servicio arranca solo al abrir la app.
+        if (requestBluetoothEnableIfNeeded()) send(HidRemoteService.ACTION_START)
         updateConnectionCard()
         handler.post(statusUpdater)
     }
@@ -95,7 +96,7 @@ class MainActivity : AppCompatActivity() {
                 setTextColor(Color.BLACK)
                 typeface = Typeface.create("serif", Typeface.BOLD_ITALIC)
             }, LinearLayout.LayoutParams(0, dp(54), 1f).apply { gravity = Gravity.CENTER_VERTICAL })
-            addView(actionButton("Settings", secondary = true) { showSettings() }.apply {
+            addView(actionButton("Ajustes", secondary = true) { showSettings() }.apply {
                 layoutParams = LinearLayout.LayoutParams(dp(122), dp(42))
             })
         })
@@ -111,12 +112,12 @@ class MainActivity : AppCompatActivity() {
                 }
                 addView(statusDot, LinearLayout.LayoutParams(dp(24), dp(36)))
                 addView(vertical().apply {
-                    statusText = label("Starting…", 15f, bold = true).apply { setTextColor(Color.BLACK) }
-                    deviceText = label("No target selected", 12f).apply { setTextColor(color("#555555")) }
+                    statusText = label("Iniciando…", 15f, bold = true).apply { setTextColor(Color.BLACK) }
+                    deviceText = label("Ningún dispositivo elegido", 12f).apply { setTextColor(color("#555555")) }
                     addView(statusText)
                     addView(deviceText)
                 }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-                addView(actionButton("Reconnect", secondary = true) {
+                addView(actionButton("Reconectar", secondary = true) {
                     if (requestBluetoothEnableIfNeeded(connectAfterEnable = true, allowRepeat = true)) {
                         send(HidRemoteService.ACTION_START)
                         send(HidRemoteService.ACTION_CONNECT_SELECTED)
@@ -128,23 +129,23 @@ class MainActivity : AppCompatActivity() {
         })
         page.addView(divider())
 
-        page.addView(label("Page turner", 35f, bold = true).apply {
+        page.addView(label("Pasapáginas", 35f, bold = true).apply {
             typeface = Typeface.create("serif", Typeface.BOLD)
             setTextColor(Color.BLACK)
             setPadding(0, dp(24), 0, 0)
         })
-        page.addView(label("BLUETOOTH PAGE REMOTE", 11f, bold = true).apply {
+        page.addView(label("CONTROL REMOTO BLUETOOTH", 11f, bold = true).apply {
             letterSpacing = .08f
             setTextColor(color("#555555"))
             setPadding(0, dp(4), 0, dp(16))
         })
 
-        page.addView(remoteButton("→", "Next page", HidRemoteService.ACTION_SEND_DOWN, primary = true), matchHeight(nextButtonHeight))
-        page.addView(remoteButton("←", "Previous page", HidRemoteService.ACTION_SEND_UP, compact = true), matchHeight(previousButtonHeight).apply {
+        page.addView(remoteButton("→", "Página siguiente", HidRemoteService.ACTION_SEND_DOWN, primary = true), matchHeight(nextButtonHeight))
+        page.addView(remoteButton("←", "Página anterior", HidRemoteService.ACTION_SEND_UP, compact = true), matchHeight(previousButtonHeight).apply {
             topMargin = dp(12)
         })
 
-        page.addView(actionButton("○   Lock / wake Kobo", secondary = true) {
+        page.addView(actionButton("○   Enviar Esc al Kobo", secondary = true) {
             send(HidRemoteService.ACTION_SEND_BACK)
         }.apply {
             layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(50)).apply {
@@ -155,7 +156,7 @@ class MainActivity : AppCompatActivity() {
         page.addView(divider().apply {
             layoutParams = matchHeight(dp(1)).apply { topMargin = dp(20) }
         })
-        page.addView(label("Volume keys remain active while your phone is locked.", 13f).apply {
+        page.addView(label("Los botones de volumen pasan página. Con la pantalla apagada, aún por comprobar.", 13f).apply {
             gravity = Gravity.CENTER
             typeface = Typeface.create("serif", Typeface.ITALIC)
             setTextColor(color("#444444"))
@@ -198,25 +199,25 @@ class MainActivity : AppCompatActivity() {
             background = rounded("#F4F1E8", 2)
             addView(horizontal().apply {
                 gravity = Gravity.CENTER_VERTICAL
-                addView(label("Settings", 26f, bold = true).apply {
+                addView(label("Ajustes", 26f, bold = true).apply {
                     typeface = Typeface.create("serif", Typeface.BOLD)
                 }, LinearLayout.LayoutParams(0, dp(48), 1f))
-                addView(actionButton("Done", secondary = true) { dialog.dismiss() }.apply {
+                addView(actionButton("Listo", secondary = true) { dialog.dismiss() }.apply {
                     layoutParams = LinearLayout.LayoutParams(dp(86), dp(40))
                 })
             })
             addView(divider().apply { layoutParams = matchHeight(dp(1)).apply { bottomMargin = dp(18) } })
-            addView(sectionLabel("CONNECTION"))
-            addView(actionButton("Change device") { showDevicePicker() })
-            addView(actionButton("Bluetooth settings", secondary = true) {
+            addView(sectionLabel("CONEXIÓN"))
+            addView(actionButton("Cambiar dispositivo") { showDevicePicker() })
+            addView(actionButton("Ajustes de Bluetooth", secondary = true) {
                 startActivity(Intent(Settings.ACTION_BLUETOOTH_SETTINGS))
             }.apply { layoutParams = matchHeight(dp(52)).apply { topMargin = dp(8) } })
             addView(divider().apply { layoutParams = matchHeight(dp(1)).apply { topMargin = dp(22); bottomMargin = dp(18) } })
-            addView(sectionLabel("VOLUME BUTTON ACTIONS"))
-            addView(mappingSpinner("Volume up", true))
-            addView(mappingSpinner("Volume down", false))
+            addView(sectionLabel("ACCIÓN DE LOS BOTONES DE VOLUMEN"))
+            addView(mappingSpinner("Subir volumen", true))
+            addView(mappingSpinner("Bajar volumen", false))
             addView(CheckBox(this@MainActivity).apply {
-                text = "Start remote after phone restart"
+                text = "Iniciar el control al reiniciar el teléfono"
                 textSize = 14f
                 setTextColor(Color.BLACK)
                 isChecked = Prefs.startOnBoot(this@MainActivity)
@@ -224,7 +225,7 @@ class MainActivity : AppCompatActivity() {
                 setPadding(0, dp(12), 0, dp(6))
             })
             addView(divider().apply { layoutParams = matchHeight(dp(1)).apply { topMargin = dp(12); bottomMargin = dp(14) } })
-            addView(actionButton("Disconnect and stop remote", secondary = true) {
+            addView(actionButton("Desconectar y detener el control", secondary = true) {
                 confirmStopRemote()
             }.apply { layoutParams = matchHeight(dp(52)) })
         }
@@ -240,9 +241,9 @@ class MainActivity : AppCompatActivity() {
 
     private fun confirmStopRemote() {
         showConfirmationDialog(
-            title = "Disconnect remote?",
-            message = "Page controls and physical volume-button actions will stop until you reconnect.",
-            confirmLabel = "Disconnect"
+            title = "¿Desconectar el control?",
+            message = "Los botones de página y de volumen dejarán de funcionar hasta que vuelvas a conectar.",
+            confirmLabel = "Desconectar"
         ) {
             send(HidRemoteService.ACTION_STOP)
         }
@@ -257,7 +258,7 @@ class MainActivity : AppCompatActivity() {
             val selectedCommand = if (isUp) Prefs.volumeUpCommand(this@MainActivity)
             else Prefs.volumeDownCommand(this@MainActivity)
             showChoiceDialog(
-                title = "$label action",
+                title = "Acción: $label",
                 choices = commands.map(::friendlyCommand),
                 selectedIndex = commands.indexOf(selectedCommand)
             ) { index ->
@@ -280,9 +281,9 @@ class MainActivity : AppCompatActivity() {
             ?.sortedBy { safeName(it) }.orEmpty()
         if (devices.isEmpty()) {
             showConfirmationDialog(
-                title = "No paired devices",
-                message = "Pair your eReader in Android Bluetooth settings, then return to Komobo.",
-                confirmLabel = "Bluetooth settings"
+                title = "No hay dispositivos emparejados",
+                message = "Empareja tu lector en los ajustes de Bluetooth de Android y vuelve a Komobo.",
+                confirmLabel = "Ajustes de Bluetooth"
             ) {
                 startActivity(Intent(Settings.ACTION_BLUETOOTH_SETTINGS))
             }
@@ -290,7 +291,7 @@ class MainActivity : AppCompatActivity() {
         }
         val selectedAddress = Prefs.hostAddress(this)
         showChoiceDialog(
-            title = "Change device",
+            title = "Cambiar dispositivo",
             choices = devices.map(::safeName),
             selectedIndex = devices.indexOfFirst { it.address == selectedAddress }
         ) { index ->
@@ -336,7 +337,7 @@ class MainActivity : AppCompatActivity() {
                 setPadding(dp(2), dp(16), dp(2), dp(20))
             })
             addView(horizontal().apply {
-                addView(actionButton("Cancel", secondary = true) { dialog.dismiss() }, weighted(1f, dp(50)).apply {
+                addView(actionButton("Cancelar", secondary = true) { dialog.dismiss() }, weighted(1f, dp(50)).apply {
                     rightMargin = dp(5)
                 })
                 addView(actionButton(confirmLabel) {
@@ -363,8 +364,8 @@ class MainActivity : AppCompatActivity() {
                 gravity = Gravity.CENTER_VERTICAL
             }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
             addView(
-                actionButton("Close", secondary = true) { dialog.dismiss() },
-                LinearLayout.LayoutParams(dp(78), dp(40))
+                actionButton("Cerrar", secondary = true) { dialog.dismiss() },
+                LinearLayout.LayoutParams(dp(86), dp(40))
             )
         })
         addView(divider().apply {
@@ -389,12 +390,12 @@ class MainActivity : AppCompatActivity() {
     private fun updateConnectionCard() {
         if (!::statusText.isInitialized) return
         val status = HidRemoteService.connectionStatus
-        val connected = status.startsWith("Connected")
+        val connected = status == HidRemoteService.STATUS_CONNECTED
         statusText.text = status
         statusDot.text = if (connected) "●" else "○"
         statusDot.setTextColor(Color.BLACK)
         val address = Prefs.hostAddress(this)
-        deviceText.text = selectedDeviceName(address) ?: if (address == null) "Select a device in Settings" else address
+        deviceText.text = selectedDeviceName(address) ?: if (address == null) "Elige tu Kobo en Ajustes" else address
     }
 
     private fun selectedDeviceName(address: String?): String? {
@@ -403,7 +404,13 @@ class MainActivity : AppCompatActivity() {
             ?.firstOrNull { it.address == address }?.let(::safeName)
     }
 
+    // Solo arranca el servicio si Android ya concedió el permiso de Bluetooth.
+    // Sin ese permiso, el servicio podría cerrarse al arrancar.
     private fun send(action: String) {
+        if (!hasBtConnectPermission()) {
+            requestRuntimePermissions()
+            return
+        }
         ContextCompat.startForegroundService(this, Intent(this, HidRemoteService::class.java).setAction(action))
     }
 
@@ -418,7 +425,9 @@ class MainActivity : AppCompatActivity() {
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == 100 && hasBtConnectPermission()) requestBluetoothEnableIfNeeded()
+        if (requestCode == 100 && hasBtConnectPermission()) {
+            if (requestBluetoothEnableIfNeeded()) send(HidRemoteService.ACTION_START)
+        }
     }
 
     private fun requestBluetoothEnableIfNeeded(
@@ -449,10 +458,10 @@ class MainActivity : AppCompatActivity() {
     private fun safeName(device: BluetoothDevice): String = runCatching { device.name ?: device.address }.getOrDefault(device.address)
 
     private fun friendlyCommand(command: RemoteCommand): String = when (command) {
-        RemoteCommand.DPAD_UP, RemoteCommand.DPAD_LEFT -> "Previous page"
-        RemoteCommand.DPAD_DOWN, RemoteCommand.DPAD_RIGHT -> "Next page"
-        RemoteCommand.ENTER -> "Select / OK"
-        RemoteCommand.BACK -> "Lock / wake Kobo"
+        RemoteCommand.DPAD_UP, RemoteCommand.DPAD_LEFT -> "Página anterior"
+        RemoteCommand.DPAD_DOWN, RemoteCommand.DPAD_RIGHT -> "Página siguiente"
+        RemoteCommand.ENTER -> "Seleccionar / OK"
+        RemoteCommand.BACK -> "Enviar Esc al Kobo"
         else -> command.label
     }
 
