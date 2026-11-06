@@ -151,7 +151,7 @@ class MainActivity : AppCompatActivity() {
             topMargin = dp(12)
         })
 
-        page.addView(actionButton("○   Bloquear Kobo", secondary = true) {
+        page.addView(actionButton("○   Bloquear / desbloquear Kobo", secondary = true) {
             send(HidRemoteService.ACTION_SEND_BACK)
         }.apply {
             layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(50)).apply {
@@ -469,7 +469,7 @@ class MainActivity : AppCompatActivity() {
         RemoteCommand.DPAD_UP, RemoteCommand.DPAD_LEFT -> "Página anterior"
         RemoteCommand.DPAD_DOWN, RemoteCommand.DPAD_RIGHT -> "Página siguiente"
         RemoteCommand.ENTER -> "Seleccionar / OK"
-        RemoteCommand.BACK -> "Bloquear Kobo"
+        RemoteCommand.BACK -> "Bloquear / desbloquear Kobo"
         else -> command.label
     }
 
