@@ -39,12 +39,15 @@ class HidRemoteService : Service() {
         const val ACTION_VOLUME_UP_MAPPING = "com.kokseen1.komobo.VOLUME_UP_MAPPING"
         const val ACTION_VOLUME_DOWN_MAPPING = "com.kokseen1.komobo.VOLUME_DOWN_MAPPING"
 
+        // Texto exacto que muestra la app cuando hay conexión. MainActivity lo compara con este valor.
+        const val STATUS_CONNECTED = "Conectado"
+
         private const val TAG = "Komobo"
         private const val CHANNEL_ID = "hid_remote"
         private const val NOTIF_ID = 10
 
         @Volatile
-        var connectionStatus: String = "Not connected"
+        var connectionStatus: String = "No conectado"
             private set
     }
 
@@ -69,8 +72,7 @@ class HidRemoteService : Service() {
             if (profile == BluetoothProfile.HID_DEVICE) {
                 profileProxyRequested = false
                 hidDevice = null
-                connectionStatus = "Bluetooth service unavailable"
-                startForeground(NOTIF_ID, buildNotification(connectionStatus))
+                setStatus("Servicio Bluetooth no disponible")
             }
         }
     }
@@ -78,10 +80,12 @@ class HidRemoteService : Service() {
     private val hidCallback = object : BluetoothHidDevice.Callback() {
         override fun onAppStatusChanged(pluggedDevice: BluetoothDevice?, registered: Boolean) {
             Log.i(TAG, "HID app registered=$registered plugged=$pluggedDevice")
-            connectionStatus = if (registered) "Ready to connect" else "Remote unavailable"
             if (registered) {
+                setStatus("Listo para conectar")
                 pluggedDevice?.let { hostDevice = it }
                 connectSelectedHost()
+            } else {
+                setStatus("Control no disponible")
             }
         }
 
@@ -89,18 +93,14 @@ class HidRemoteService : Service() {
             Log.i(TAG, "HID connection state=$state device=$device")
             if (state == BluetoothProfile.STATE_CONNECTED) {
                 hostDevice = device
-                connectionStatus = "Connected"
-                startForeground(NOTIF_ID, buildNotification("Connected: ${device?.let(::safeName) ?: "unknown"}"))
+                setStatus(STATUS_CONNECTED, "Conectado: ${device?.let(::safeName) ?: "desconocido"}")
             } else if (state == BluetoothProfile.STATE_DISCONNECTED && device == hostDevice) {
                 hostDevice = null
-                connectionStatus = "Not connected"
-                startForeground(NOTIF_ID, buildNotification(connectionStatus))
+                setStatus("No conectado")
             } else if (state == BluetoothProfile.STATE_CONNECTING) {
-                connectionStatus = "Connecting…"
-                startForeground(NOTIF_ID, buildNotification(connectionStatus))
+                setStatus("Conectando…")
             } else if (state == BluetoothProfile.STATE_DISCONNECTING) {
-                connectionStatus = "Disconnecting…"
-                startForeground(NOTIF_ID, buildNotification(connectionStatus))
+                setStatus("Desconectando…")
             }
         }
 
@@ -129,9 +129,9 @@ class HidRemoteService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        connectionStatus = "Starting…"
+        connectionStatus = "Iniciando…"
         createNotificationChannel()
-        startForeground(NOTIF_ID, buildNotification("Starting"))
+        startForeground(NOTIF_ID, buildNotification("Iniciando"))
         acquireWakeLock()
         startMediaSessionVolumeTrap()
         initBluetoothHid()
@@ -155,7 +155,7 @@ class HidRemoteService : Service() {
     }
 
     override fun onDestroy() {
-        connectionStatus = "Remote stopped"
+        connectionStatus = "Control detenido"
         mediaSession?.isActive = false
         mediaSession?.release()
         wakeLock?.takeIf { it.isHeld }?.release()
@@ -171,18 +171,23 @@ class HidRemoteService : Service() {
 
     override fun onBind(intent: Intent?): IBinder? = null
 
+    // Guarda el estado que ve la pantalla principal y actualiza la notificación.
+    private fun setStatus(status: String, notificationText: String = status) {
+        connectionStatus = status
+        runCatching { startForeground(NOTIF_ID, buildNotification(notificationText)) }
+            .onFailure { Log.e(TAG, "No se pudo actualizar la notificación", it) }
+    }
+
     private fun initBluetoothHid() {
         if (hidDevice != null || profileProxyRequested) return
         if (!hasBtConnectPermission()) {
             Log.w(TAG, "Missing BLUETOOTH_CONNECT")
-            connectionStatus = "Bluetooth permission needed"
-            startForeground(NOTIF_ID, buildNotification(connectionStatus))
+            setStatus("Falta permiso de Bluetooth")
             return
         }
         val adapter = (getSystemService(BLUETOOTH_SERVICE) as BluetoothManager).adapter ?: return
         if (!adapter.isEnabled) {
-            connectionStatus = "Bluetooth is off"
-            startForeground(NOTIF_ID, buildNotification(connectionStatus))
+            setStatus("Bluetooth apagado")
             return
         }
         profileProxyRequested = adapter.getProfileProxy(this, profileListener, BluetoothProfile.HID_DEVICE)
@@ -212,55 +217,59 @@ class HidRemoteService : Service() {
         if (!hasBtConnectPermission()) return
         val adapter = (getSystemService(BLUETOOTH_SERVICE) as BluetoothManager).adapter
         if (adapter?.isEnabled != true) {
-            connectionStatus = "Bluetooth is off"
-            startForeground(NOTIF_ID, buildNotification(connectionStatus))
+            setStatus("Bluetooth apagado")
             return
         }
         if (hidDevice == null) {
             initBluetoothHid()
-            connectionStatus = "Starting…"
-            startForeground(NOTIF_ID, buildNotification(connectionStatus))
+            setStatus("Iniciando…")
             return
         }
-        val host = selectedHost() ?: findFirstBondedDevice()
+        // Solo se conecta al dispositivo que elegiste en Ajustes. Ya no adivina otro.
+        val host = selectedHost()
         if (host != null) {
             hostDevice = host
             val hid = hidDevice
             val state = runCatching { hid?.getConnectionState(host) }.getOrNull()
             if (state == BluetoothProfile.STATE_CONNECTED) {
-                connectionStatus = "Connected"
-                startForeground(NOTIF_ID, buildNotification("Connected: ${safeName(host)}"))
+                setStatus(STATUS_CONNECTED, "Conectado: ${safeName(host)}")
             } else {
-                connectionStatus = "Connecting…"
+                setStatus("Conectando…", "Conectando: ${safeName(host)}")
                 runCatching { hid?.connect(host) }
-                startForeground(NOTIF_ID, buildNotification("Connecting: ${safeName(host)}"))
             }
         } else {
-            connectionStatus = "Choose a target"
-            startForeground(NOTIF_ID, buildNotification("No paired target selected"))
+            setStatus("Elige tu Kobo en Ajustes", "Falta elegir el Kobo")
         }
     }
 
+    private fun rememberReport(report: HidReports.Report, data: ByteArray) {
+        if (report.reportId == HidReports.REPORT_ID_KEYBOARD) lastKeyboardReport = data
+        else lastConsumerReport = data
+    }
+
     private fun sendCommand(command: RemoteCommand) {
-        val host = hostDevice ?: selectedHost() ?: findFirstBondedDevice()
+        val host = hostDevice ?: selectedHost()
         val hid = hidDevice
         if (hid == null || host == null || !hasBtConnectPermission()) {
-            Log.w(TAG, "Cannot send $command. hid=$hid host=$host permission=${hasBtConnectPermission()}")
+            Log.w(TAG, "No se puede enviar ${command.label}. hid=$hid host=$host permiso=${hasBtConnectPermission()}")
             return
         }
         hostDevice = host
         val report = HidReports.reportFor(command)
         executor.execute {
-            runCatching {
-                if (report.reportId == HidReports.REPORT_ID_KEYBOARD) lastKeyboardReport = report.press
-                else lastConsumerReport = report.press
+            try {
+                rememberReport(report, report.press)
                 val pressed = hid.sendReport(host, report.reportId, report.press)
+                Log.i(TAG, "Pulsada ${command.label} en ${safeName(host)} ok=$pressed")
                 Thread.sleep(35)
-                if (report.reportId == HidReports.REPORT_ID_KEYBOARD) lastKeyboardReport = report.release
-                else lastConsumerReport = report.release
-                val released = hid.sendReport(host, report.reportId, report.release)
-                Log.i(TAG, "Sent ${command.label} to ${safeName(host)} press=$pressed release=$released")
-            }.onFailure { Log.e(TAG, "Failed to send ${command.label}", it) }
+            } catch (e: Exception) {
+                Log.e(TAG, "Falló al pulsar ${command.label}", e)
+            } finally {
+                // La tecla siempre se suelta, aunque algo haya fallado antes.
+                rememberReport(report, report.release)
+                val released = runCatching { hid.sendReport(host, report.reportId, report.release) }.getOrDefault(false)
+                Log.i(TAG, "Soltada ${command.label} ok=$released")
+            }
         }
     }
 
@@ -269,11 +278,6 @@ class HidRemoteService : Service() {
         val address = Prefs.hostAddress(this) ?: return null
         val adapter = (getSystemService(BLUETOOTH_SERVICE) as BluetoothManager).adapter ?: return null
         return runCatching { adapter.getRemoteDevice(address) }.getOrNull()
-    }
-
-    private fun findFirstBondedDevice(): BluetoothDevice? {
-        if (!hasBtConnectPermission()) return null
-        return (getSystemService(BLUETOOTH_SERVICE) as BluetoothManager).adapter?.bondedDevices?.firstOrNull()
     }
 
     private fun startMediaSessionVolumeTrap() {
@@ -327,10 +331,9 @@ class HidRemoteService : Service() {
             .setContentText(status)
             .setContentIntent(openIntent)
             .setOngoing(true)
-            .addAction(0, "Previous", serviceIntent(ACTION_SEND_UP, 1))
-            .addAction(0, "Next", serviceIntent(ACTION_SEND_DOWN, 2))
-            .addAction(0, "Disconnect", serviceIntent(ACTION_STOP, 3))
-            .addAction(0, "Lock / wake", serviceIntent(ACTION_SEND_BACK, 4))
+            .addAction(0, "Anterior", serviceIntent(ACTION_SEND_UP, 1))
+            .addAction(0, "Siguiente", serviceIntent(ACTION_SEND_DOWN, 2))
+            .addAction(0, "Desconectar", serviceIntent(ACTION_STOP, 3))
             .build()
     }
 
@@ -339,12 +342,12 @@ class HidRemoteService : Service() {
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= 26) {
-            val channel = NotificationChannel(CHANNEL_ID, "Komobo remote", NotificationManager.IMPORTANCE_LOW)
+            val channel = NotificationChannel(CHANNEL_ID, "Control Komobo", NotificationManager.IMPORTANCE_LOW)
             getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
         }
     }
 
     private fun safeName(device: BluetoothDevice): String = if (hasBtConnectPermission()) {
         runCatching { device.name ?: device.address }.getOrDefault(device.address)
-    } else "Bluetooth device"
+    } else "Dispositivo Bluetooth"
 }
