@@ -1,9 +1,9 @@
 <resources>
     <string name="app_name">Komobo</string>
-    <string name="shortcut_previous_page_short">Previous</string>
-    <string name="shortcut_previous_page_long">Previous page</string>
-    <string name="shortcut_next_page_short">Next</string>
-    <string name="shortcut_next_page_long">Next page</string>
-    <string name="shortcut_lock_wake_short">Lock / wake</string>
-    <string name="shortcut_lock_wake_long">Lock or wake Kobo</string>
+    <string name="shortcut_previous_page_short">Anterior</string>
+    <string name="shortcut_previous_page_long">Página anterior</string>
+    <string name="shortcut_next_page_short">Siguiente</string>
+    <string name="shortcut_next_page_long">Página siguiente</string>
+    <string name="shortcut_lock_wake_short">Esc</string>
+    <string name="shortcut_lock_wake_long">Enviar Esc al Kobo</string>
 </resources>
