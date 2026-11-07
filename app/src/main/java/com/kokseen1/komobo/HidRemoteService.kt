@@ -26,6 +26,22 @@ import androidx.media.VolumeProviderCompat
 import java.util.concurrent.Executors
 
 class HidRemoteService : Service() {
+    // Estados que puede mostrar la app. El texto (español o inglés) lo pone la clase Texts.
+    enum class Status {
+        STARTING,
+        NOT_CONNECTED,
+        BLUETOOTH_UNAVAILABLE,
+        READY,
+        REMOTE_UNAVAILABLE,
+        CONNECTED,
+        CONNECTING,
+        DISCONNECTING,
+        STOPPED,
+        NEEDS_PERMISSION,
+        BLUETOOTH_OFF,
+        CHOOSE_DEVICE
+    }
+
     companion object {
         const val ACTION_START = "com.kokseen1.komobo.START"
         const val ACTION_STOP = "com.kokseen1.komobo.STOP"
@@ -39,15 +55,12 @@ class HidRemoteService : Service() {
         const val ACTION_VOLUME_UP_MAPPING = "com.kokseen1.komobo.VOLUME_UP_MAPPING"
         const val ACTION_VOLUME_DOWN_MAPPING = "com.kokseen1.komobo.VOLUME_DOWN_MAPPING"
 
-        // Texto exacto que muestra la app cuando hay conexión. MainActivity lo compara con este valor.
-        const val STATUS_CONNECTED = "Conectado"
-
         private const val TAG = "Komobo"
         private const val CHANNEL_ID = "hid_remote"
         private const val NOTIF_ID = 10
 
         @Volatile
-        var connectionStatus: String = "No conectado"
+        var status: Status = Status.NOT_CONNECTED
             private set
     }
 
@@ -72,7 +85,7 @@ class HidRemoteService : Service() {
             if (profile == BluetoothProfile.HID_DEVICE) {
                 profileProxyRequested = false
                 hidDevice = null
-                setStatus("Servicio Bluetooth no disponible")
+                setStatus(Status.BLUETOOTH_UNAVAILABLE)
             }
         }
     }
@@ -81,11 +94,11 @@ class HidRemoteService : Service() {
         override fun onAppStatusChanged(pluggedDevice: BluetoothDevice?, registered: Boolean) {
             Log.i(TAG, "HID app registered=$registered plugged=$pluggedDevice")
             if (registered) {
-                setStatus("Listo para conectar")
+                setStatus(Status.READY)
                 pluggedDevice?.let { hostDevice = it }
                 connectSelectedHost()
             } else {
-                setStatus("Control no disponible")
+                setStatus(Status.REMOTE_UNAVAILABLE)
             }
         }
 
@@ -93,14 +106,17 @@ class HidRemoteService : Service() {
             Log.i(TAG, "HID connection state=$state device=$device")
             if (state == BluetoothProfile.STATE_CONNECTED) {
                 hostDevice = device
-                setStatus(STATUS_CONNECTED, "Conectado: ${device?.let(::safeName) ?: "desconocido"}")
+                setStatus(
+                    Status.CONNECTED,
+                    device?.let(::safeName) ?: Texts.tr(this@HidRemoteService, "desconocido", "unknown")
+                )
             } else if (state == BluetoothProfile.STATE_DISCONNECTED && device == hostDevice) {
                 hostDevice = null
-                setStatus("No conectado")
+                setStatus(Status.NOT_CONNECTED)
             } else if (state == BluetoothProfile.STATE_CONNECTING) {
-                setStatus("Conectando…")
+                setStatus(Status.CONNECTING)
             } else if (state == BluetoothProfile.STATE_DISCONNECTING) {
-                setStatus("Desconectando…")
+                setStatus(Status.DISCONNECTING)
             }
         }
 
@@ -129,9 +145,9 @@ class HidRemoteService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        connectionStatus = "Iniciando…"
+        status = Status.STARTING
         createNotificationChannel()
-        startForeground(NOTIF_ID, buildNotification("Iniciando"))
+        startForeground(NOTIF_ID, buildNotification(Texts.statusText(this, Status.STARTING)))
         acquireWakeLock()
         startMediaSessionVolumeTrap()
         initBluetoothHid()
@@ -155,7 +171,7 @@ class HidRemoteService : Service() {
     }
 
     override fun onDestroy() {
-        connectionStatus = "Control detenido"
+        status = Status.STOPPED
         mediaSession?.isActive = false
         mediaSession?.release()
         wakeLock?.takeIf { it.isHeld }?.release()
@@ -171,10 +187,10 @@ class HidRemoteService : Service() {
 
     override fun onBind(intent: Intent?): IBinder? = null
 
-    // Guarda el estado que ve la pantalla principal y actualiza la notificación.
-    private fun setStatus(status: String, notificationText: String = status) {
-        connectionStatus = status
-        runCatching { startForeground(NOTIF_ID, buildNotification(notificationText)) }
+    private fun setStatus(newStatus: Status, detail: String? = null) {
+        status = newStatus
+        val text = Texts.statusText(this, newStatus) + (if (detail != null) ": $detail" else "")
+        runCatching { startForeground(NOTIF_ID, buildNotification(text)) }
             .onFailure { Log.e(TAG, "No se pudo actualizar la notificación", it) }
     }
 
@@ -182,12 +198,12 @@ class HidRemoteService : Service() {
         if (hidDevice != null || profileProxyRequested) return
         if (!hasBtConnectPermission()) {
             Log.w(TAG, "Missing BLUETOOTH_CONNECT")
-            setStatus("Falta permiso de Bluetooth")
+            setStatus(Status.NEEDS_PERMISSION)
             return
         }
         val adapter = (getSystemService(BLUETOOTH_SERVICE) as BluetoothManager).adapter ?: return
         if (!adapter.isEnabled) {
-            setStatus("Bluetooth apagado")
+            setStatus(Status.BLUETOOTH_OFF)
             return
         }
         profileProxyRequested = adapter.getProfileProxy(this, profileListener, BluetoothProfile.HID_DEVICE)
@@ -217,28 +233,27 @@ class HidRemoteService : Service() {
         if (!hasBtConnectPermission()) return
         val adapter = (getSystemService(BLUETOOTH_SERVICE) as BluetoothManager).adapter
         if (adapter?.isEnabled != true) {
-            setStatus("Bluetooth apagado")
+            setStatus(Status.BLUETOOTH_OFF)
             return
         }
         if (hidDevice == null) {
             initBluetoothHid()
-            setStatus("Iniciando…")
+            setStatus(Status.STARTING)
             return
         }
-        // Solo se conecta al dispositivo que elegiste en Ajustes. Ya no adivina otro.
         val host = selectedHost()
         if (host != null) {
             hostDevice = host
             val hid = hidDevice
             val state = runCatching { hid?.getConnectionState(host) }.getOrNull()
             if (state == BluetoothProfile.STATE_CONNECTED) {
-                setStatus(STATUS_CONNECTED, "Conectado: ${safeName(host)}")
+                setStatus(Status.CONNECTED, safeName(host))
             } else {
-                setStatus("Conectando…", "Conectando: ${safeName(host)}")
+                setStatus(Status.CONNECTING, safeName(host))
                 runCatching { hid?.connect(host) }
             }
         } else {
-            setStatus("Elige tu Kobo en Ajustes", "Falta elegir el Kobo")
+            setStatus(Status.CHOOSE_DEVICE)
         }
     }
 
@@ -313,7 +328,7 @@ class HidRemoteService : Service() {
     private fun hasBtConnectPermission(): Boolean = Build.VERSION.SDK_INT < 31 ||
         ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED
 
-    private fun buildNotification(status: String): Notification {
+    private fun buildNotification(text: String): Notification {
         fun serviceIntent(action: String, requestCode: Int) = PendingIntent.getService(
             this, requestCode, Intent(this, HidRemoteService::class.java).setAction(action), pendingFlags()
         )
@@ -328,12 +343,12 @@ class HidRemoteService : Service() {
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.stat_sys_data_bluetooth)
             .setContentTitle("Komobo")
-            .setContentText(status)
+            .setContentText(text)
             .setContentIntent(openIntent)
             .setOngoing(true)
-            .addAction(0, "Anterior", serviceIntent(ACTION_SEND_UP, 1))
-            .addAction(0, "Siguiente", serviceIntent(ACTION_SEND_DOWN, 2))
-            .addAction(0, "Desconectar", serviceIntent(ACTION_STOP, 3))
+            .addAction(0, Texts.tr(this, "Anterior", "Previous"), serviceIntent(ACTION_SEND_UP, 1))
+            .addAction(0, Texts.tr(this, "Siguiente", "Next"), serviceIntent(ACTION_SEND_DOWN, 2))
+            .addAction(0, Texts.tr(this, "Desconectar", "Disconnect"), serviceIntent(ACTION_STOP, 3))
             .build()
     }
 
@@ -342,12 +357,16 @@ class HidRemoteService : Service() {
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= 26) {
-            val channel = NotificationChannel(CHANNEL_ID, "Control Komobo", NotificationManager.IMPORTANCE_LOW)
+            val channel = NotificationChannel(
+                CHANNEL_ID,
+                Texts.tr(this, "Control Komobo", "Komobo remote"),
+                NotificationManager.IMPORTANCE_LOW
+            )
             getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
         }
     }
 
     private fun safeName(device: BluetoothDevice): String = if (hasBtConnectPermission()) {
         runCatching { device.name ?: device.address }.getOrDefault(device.address)
-    } else "Dispositivo Bluetooth"
+    } else Texts.tr(this, "Dispositivo Bluetooth", "Bluetooth device")
 }
