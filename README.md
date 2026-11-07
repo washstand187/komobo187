@@ -40,7 +40,10 @@ Aquí puedes ver cómo luce la aplicación en su versión para celular:
 
 <p align="center">
 <img width="1568" height="1600" alt="WhatsApp-Image-2026-11-07-at-09 37" src="https://github.com/user-attachments/assets/3b3c4561-f794-45b2-96eb-5f7356b2bde0" />
+Español/Inglés
+ 
  <img width="1568" height="1600" alt="WhatsApp-Image-2026-11-07-at-09" src="https://github.com/user-attachments/assets/196f3fd4-e100-48ae-b89b-d2c593ca3bb8" />
+Modo día/noche
 
 </p>
 
