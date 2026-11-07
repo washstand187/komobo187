@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -30,9 +30,20 @@ jobs:
       - name: Build debug APK
         run: ./gradlew assembleDebug --no-daemon
 
+      - name: Rename APK
+        run: cp app/build/outputs/apk/debug/app-debug.apk komobo.apk
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: komobo-debug-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: komobo
+          path: komobo.apk
           if-no-files-found: error
+
+      - name: Publish release
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete latest --yes --cleanup-tag || true
+          gh release create latest komobo.apk --target "$GITHUB_SHA" --title "Komobo" --notes "Descarga komobo.apk e instálalo en tu Android." --latest
