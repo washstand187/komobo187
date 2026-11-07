@@ -1,37 +1,51 @@
-# Sobre este proyecto
-Esta aplicación es una reconstrucción del prototipo inicial de **kokseen1**. Y me ayudó mucho, porque no tengo la facilidad de comprar un control remoto de forma oficial, ni de terceros.
+# Komobo
 
-## Nuevas características añadidas:
-• Soporte bilingüe: Disponible completamente en inglés y español. (Actualmente buscando un mejor nombre que Pasapáginas)
-• Modo Día y Noche: Interfaz adaptable con tema claro y oscuro para una lectura cómoda a cualquier hora.
+Control remoto Bluetooth para pasar las páginas de un Kobo desde un teléfono Android.
 
-Mi versión se ha hecho utilizando el kobo clara bw y el Samsung s25 ultra.
+## Sobre este proyecto
 
-## Guía de Instalación y Uso de Komobo
+Reconstrucción del prototipo inicial de **kokseen1**, hecha porque no tengo la facilidad de comprar un control remoto, ni oficial ni de terceros.
 
-Komobo te permite usar los botones físicos de volumen de tu teléfono Android (o su pantalla) para pasar las páginas de tu eReader Kobo por Bluetooth.
+- Disponible en español e inglés.
+- Modo día y modo oscuro.
 
-### Paso 1: Instalación y Permisos Iniciales
+Probado con un Kobo Clara BW y un Samsung Galaxy S25 Ultra con Android 16. Requiere Android 9 o superior y un teléfono que admita el modo HID por Bluetooth.
 
-1. Instala el archivo APK en tu teléfono Android (asegúrate de otorgar los permisos necesarios en tu navegador o gestor de archivos para instalar aplicaciones de fuentes desconocidas).
-2. Abre la aplicación por primera vez.
-3. Concede todos los accesos solicitados, especialmente los permisos de Bluetooth, dispositivos cercanos y notificaciones.
+## Instalación
+
+1. Descarga `komobo.apk` desde [Releases](../../releases/latest) e instálalo. Android pedirá permiso para instalar desde fuentes desconocidas. Si no deja actualizar encima de una versión anterior, desinstala la anterior primero.
+2. Abre la app y concede los permisos de Bluetooth ("Dispositivos cercanos") y de notificaciones.
+
+## Configuración
+
+1. Activa el Bluetooth en el Kobo y en el teléfono.
+2. Desde los ajustes de Bluetooth del Kobo, busca tu teléfono y empareja ambos dispositivos.
+3. En Komobo, entra en **Ajustes → Cambiar dispositivo** y selecciona tu Kobo. Es imprescindible: sin esto no conecta.
+4. Revisa las acciones de los botones de volumen (por defecto, subir es página anterior y bajar es página siguiente) y toca **Listo**.
+
+## Uso
+
+Cuando el estado diga **Conectado**, abre un libro en el Kobo y pasa las páginas con los botones de la pantalla o con los botones físicos de volumen, también con la pantalla apagada. Si no conecta solo, toca **Reconectar**.
+
+El botón **Bloquear / desbloquear Kobo** bloquea la pantalla del Kobo y la despierta.
+
+## Notas
+
+- Con el Bluetooth activado, el Kobo puede encender el Wi-Fi y tardar más en despertar. Pasa aunque Komobo no esté conectado.
+- Los botones de volumen con la pantalla apagada se comprobaron en el Samsung Galaxy S25 Ultra; en otros teléfonos pueden comportarse distinto.
+
+## Capturas de pantalla
+
+Aquí puedes ver cómo luce la aplicación en su versión para celular:
+
+<p align="center">
+<img width="1568" height="1600" alt="WhatsApp-Image-2026-11-07-at-09 37" src="https://github.com/user-attachments/assets/3b3c4561-f794-45b2-96eb-5f7356b2bde0" />
+ <img width="1568" height="1600" alt="WhatsApp-Image-2026-11-07-at-09" src="https://github.com/user-attachments/assets/196f3fd4-e100-48ae-b89b-d2c593ca3bb8" />
+
+</p>
+
+## Créditos
+
+Basado en el prototipo inicial de **kokseen1**. Proyecto independiente, no afiliado a Rakuten Kobo.
 
 
-### Paso 2: Vinculación y Configuración del Kobo
-
-1. Ve a los Ajustes de tu teléfono y entra a la sección de Bluetooth.
-2. Busca tu eReader Kobo entre los dispositivos disponibles y vinclúnalo (emparéjalo).
-3. Regresa a la app Komobo y entra a sus ajustes.
-4. Toca en la opción Cambiar dispositivo (Change device) y selecciona tu Kobo.
-	• Nota importante: Debes dejarlo seleccionado, ya que si no realizas este paso, la aplicación no funcionará.
-5. Revisa en la configuración que las acciones asignadas a los botones de subir y bajar volumen estén bien asignadas (ya que esto puede dar un error al principio si no se verifica).
-6. Una vez configurado esto, toca el botón de Listo.
-
-### Paso 3: Conexión y Uso
-
-1. En la pantalla principal de la app, donde dice "Elije tu Kobo", asegúrate de verificar que aparezca el estado como Conectado a tu Kobo.
-2. Si no se conecta automáticamente, usa el botón Reconectar (Reconnect).
-3. Una vez confirmada la conexión, ya puedes pasar páginas:
-	• Usando los botones táctiles en la pantalla del teléfono.
-	• Apagando la pantalla del celular (o bloqueándolo) y presionando los botones físicos de volumen laterales.
