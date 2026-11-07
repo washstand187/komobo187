@@ -33,7 +33,6 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 
 class MainActivity : AppCompatActivity() {
-
     private var dark = false
 
     private val bgColor: String
@@ -558,7 +557,6 @@ class MainActivity : AppCompatActivity() {
         setTextColor(color(fgColor))
         if (bold) setTypeface(typeface, Typeface.BOLD)
     }
-  
     private fun actionButton(value: String, secondary: Boolean = false, action: () -> Unit) = Button(this).apply {
         val filled = !secondary && !dark
         text = value
