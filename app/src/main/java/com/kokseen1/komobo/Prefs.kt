@@ -26,11 +26,9 @@ object Prefs {
     fun volumeDownCommand(context: Context): RemoteCommand = RemoteCommand.fromName(sp(context).getString(KEY_VOLUME_DOWN_COMMAND, null), RemoteCommand.DPAD_DOWN)
     fun setVolumeDownCommand(context: Context, command: RemoteCommand) = sp(context).edit().putString(KEY_VOLUME_DOWN_COMMAND, command.name).apply()
 
-    // Tema: false = modo día (por defecto), true = modo oscuro.
     fun darkMode(context: Context): Boolean = sp(context).getBoolean(KEY_DARK_MODE, false)
     fun setDarkMode(context: Context, enabled: Boolean) = sp(context).edit().putBoolean(KEY_DARK_MODE, enabled).apply()
 
-    // Idioma: español por defecto.
     fun language(context: Context): String = sp(context).getString(KEY_LANGUAGE, LANG_ES) ?: LANG_ES
     fun setLanguage(context: Context, code: String) = sp(context).edit().putString(KEY_LANGUAGE, code).apply()
 
