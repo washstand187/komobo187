@@ -26,7 +26,6 @@ import androidx.media.VolumeProviderCompat
 import java.util.concurrent.Executors
 
 class HidRemoteService : Service() {
-    // Estados que puede mostrar la app. El texto (español o inglés) lo pone la clase Texts.
     enum class Status {
         STARTING,
         NOT_CONNECTED,
@@ -280,7 +279,6 @@ class HidRemoteService : Service() {
             } catch (e: Exception) {
                 Log.e(TAG, "Falló al pulsar ${command.label}", e)
             } finally {
-                // La tecla siempre se suelta, aunque algo haya fallado antes.
                 rememberReport(report, report.release)
                 val released = runCatching { hid.sendReport(host, report.reportId, report.release) }.getOrDefault(false)
                 Log.i(TAG, "Soltada ${command.label} ok=$released")
