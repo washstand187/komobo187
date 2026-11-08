@@ -9,7 +9,7 @@ Reconstrucción del prototipo inicial de **kokseen1**, hecha porque no tengo la 
 - Disponible en español e inglés.
 - Modo día y modo oscuro.
 
-Probado con un Kobo Clara BW y un Samsung Galaxy S25 Ultra con Android 16. Requiere Android 9 o superior y un teléfono que admita el modo HID por Bluetooth.
+Probado con un Kobo Clara BW y un Samsung Galaxy S25 Ultra con Android 16. Pero, ya que usa el modo HID por Bluetooth, debería funcionar con los demás modelos de Kobo que tengan Bluetooth nativo.
 
 ## Instalación
 
